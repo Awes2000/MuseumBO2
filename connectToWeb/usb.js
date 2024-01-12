@@ -149,7 +149,7 @@ function processData(data) {
 
     const distance = parseInt(distanceStr, 10);
     if (!isNaN(distance)) {
-      // Roep de tekenfunctie aan met de nieuwe afstandswaarde
+      console.log("Afstand ontvangen:", distance); // Debugging
       drawSolarSystem(distance);
     }
   }
