@@ -1,41 +1,57 @@
-
- 
 int trigPin = 11;    // Trigger
 int echoPin = 12;    // Echo
 long duration, cm, inches;
- 
+
+const int numReadings = 10; // Aantal metingen voor het voortschrijdend gemiddelde
+long readings[numReadings]; // De metingen zelf
+int readIndex = 0; // Huidige positie in de array
+long total = 0; // De som van de metingen
+long average = 0; // Het gemiddelde van de metingen
+
 void setup() {
-  //Serial Port begin
-  Serial.begin (115200);
-  //Define inputs and outputs
+  Serial.begin(115200);
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+
+  // Initialiseer alle metingen op 0:
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readings[thisReading] = 0;
+  }
 }
- 
+
 void loop() {
-  // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
-  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
   digitalWrite(trigPin, LOW);
   delayMicroseconds(5);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
- 
-  // Read the signal from the sensor: a HIGH pulse whose
-  // duration is the time (in microseconds) from the sending
-  // of the ping to the reception of its echo off of an object.
+
   pinMode(echoPin, INPUT);
   duration = pulseIn(echoPin, HIGH);
- 
-  // Convert the time into a distance
-  cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
-  inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
-  
 
-  
-  Serial.print("<"+String(cm)+">");
+  cm = (duration/2) / 29.1;
+  inches = (duration/2) / 74;
+
+  // Trek de laatste meting af van 'total':
+  total = total - readings[readIndex];
+  // Lees de nieuwe meting:
+  readings[readIndex] = cm;
+  // Voeg deze toe aan 'total':
+  total = total + readings[readIndex];
+  // Ga naar de volgende positie in de array:
+  readIndex = readIndex + 1;
+
+  // Als we aan het einde van de array zijn, ga terug naar het begin:
+  if (readIndex >= numReadings) {
+    readIndex = 0;
+  }
+
+  // Bereken het gemiddelde:
+  average = total / numReadings;
+
+  // Verzend de gemiddelde afstand:
+  Serial.print("<" + String(average) + ">");
   delay(50);
-  
-  
+
   delay(250);
 }

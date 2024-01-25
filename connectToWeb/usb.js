@@ -3,8 +3,9 @@ const canvas = document.createElement("canvas");
 document.body.appendChild(canvas);
 
 // Stel de afmetingen van het canvas in
-canvas.width = 800; // Breedte van het canvas
-canvas.height = 600; // Hoogte van het canvas
+canvas.width = 2560; // Breedte van het canvas
+canvas.height = 1440; // Hoogte van het canvas
+canvas.style.backgroundColor = "black"; // Zet de achtergrondkleur op zwart
 
 // Haal de 2D-context op
 const ctx = canvas.getContext("2d");
@@ -18,22 +19,33 @@ moon.src = "moon.jpg";
 earth.src = "earth.jpg";
 
 // Definieer de minimale en maximale afstand en grootte
-const MIN_DISTANCE = 15; // Aanpassen aan je behoeften
-const MAX_DISTANCE = 250; // Aanpassen aan je behoeften
-const MIN_SIZE = 30; // Aanpassen aan je behoeften
-const MAX_SIZE = 200; // Aanpassen aan je behoeften
+const MIN_DISTANCE = 15;
+const MAX_DISTANCE = 280;
+const MIN_SIZE = 150;
+const MAX_SIZE = 500;
+
+let currentDistance = MIN_DISTANCE;
+let targetDistance = MIN_DISTANCE;
+const LERP_SPEED = 0.02; // Aanpassen voor snellere of langzamere overgang
 
 // Functie om een waarde van het ene bereik naar het andere te schalen
 function map(value, inMin, inMax, outMin, outMax) {
   return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
 }
-function drawSolarSystem(distance) {
-  ctx.globalCompositeOperation = "destination-over";
+
+function lerp(start, end, t) {
+  return start * (1 - t) + end * t;
+}
+
+function drawSolarSystem() {
   ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+
+  // Update de huidige afstand met lineaire interpolatie
+  currentDistance = lerp(currentDistance, targetDistance, LERP_SPEED);
 
   // Aanpassen: Kleiner bij grotere afstand, groter bij kleinere afstand
   let scaledSize = map(
-    distance,
+    currentDistance,
     MIN_DISTANCE,
     MAX_DISTANCE,
     MAX_SIZE,
@@ -92,7 +104,7 @@ function drawSolarSystem(distance) {
     scaledSize
   );
 
-  window.requestAnimationFrame(() => drawSolarSystem(distance));
+  window.requestAnimationFrame(drawSolarSystem);
 }
 
 // Seriële communicatie met Arduino
@@ -139,6 +151,7 @@ async function ReadUntilClosed() {
 }
 
 function processData(data) {
+  console.log("Data ontvangen:", data); // Debugging: print ontvangen data
   str += data;
   let start = str.lastIndexOf("<");
   let end = str.lastIndexOf(">");
@@ -150,7 +163,31 @@ function processData(data) {
     const distance = parseInt(distanceStr, 10);
     if (!isNaN(distance)) {
       console.log("Afstand ontvangen:", distance); // Debugging
-      drawSolarSystem(distance);
+
+      const clampedDistance = Math.min(distance, MAX_DISTANCE);
+      targetDistance = clampedDistance;
     }
   }
 }
+
+let loadedImages = 0;
+const totalImages = 3; // Totaal aantal afbeeldingen
+
+sun.onload = () => {
+  loadedImages++;
+  if (loadedImages === totalImages) {
+    drawSolarSystem(); // Start de animatie nadat alle afbeeldingen zijn geladen
+  }
+};
+moon.onload = () => {
+  loadedImages++;
+  if (loadedImages === totalImages) {
+    drawSolarSystem();
+  }
+};
+earth.onload = () => {
+  loadedImages++;
+  if (loadedImages === totalImages) {
+    drawSolarSystem();
+  }
+};
